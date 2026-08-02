@@ -23,22 +23,13 @@ export default function GmailChecker() {
   });
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [error, setError] = useState("");
-  const [emailCount, setEmailCount] = useState(0);
-  const [duplicateCount, setDuplicateCount] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Parse and count emails in real-time
-  useEffect(() => {
-    if (inputText.trim() === "") {
-      setEmailCount(0);
-      setDuplicateCount(0);
-      return;
-    }
-    const { emails, duplicatesRemoved } = parseEmails(inputText);
-    setEmailCount(emails.length);
-    setDuplicateCount(duplicatesRemoved);
-  }, [inputText]);
+  const parsed = inputText.trim() === "" ? { emails: [], duplicatesRemoved: 0 } : parseEmails(inputText);
+  const emailCount = parsed.emails.length;
+  const duplicateCount = parsed.duplicatesRemoved;
 
   // Auto-resize textarea
   useEffect(() => {

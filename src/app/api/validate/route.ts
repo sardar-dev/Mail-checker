@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import EmailValidator from "email-deep-validator";
+import EmailValidator from "@/lib/email-validator";
 import { buildResult } from "@/lib/validators";
 import { rateLimit } from "@/utils/rate-limit";
 import { sanitizeInput } from "@/utils/helpers";

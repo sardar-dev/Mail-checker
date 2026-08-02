@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import EmailValidator from "email-deep-validator";
 import { buildResult } from "@/lib/validators";
 import { rateLimit } from "@/utils/rate-limit";
 import { sanitizeInput } from "@/utils/helpers";
@@ -8,23 +9,11 @@ import type { ValidationResult } from "@/types";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Real mailbox verification requires an SMTP (port 25) handshake with the
-// recipient's mail server. Every cloud/serverless host (Vercel/AWS,
-// Cloudflare, GCP) blocks outbound port 25 by default as an anti-spam
-// measure, so that check can never succeed from here directly. Instead we
-// delegate it to ZeroBounce's Email Validation API, which performs the
-// SMTP check on its own whitelisted infrastructure.
-// https://www.zerobounce.net/apis/email-validation-api
-//
-// Supports multiple keys (ZEROBOUNCE_API_KEY, ZEROBOUNCE_API_KEY_2, ...)
-// so several free-tier accounts can be combined for more monthly quota.
-// When a key's quota runs out, requests using it fail — on any failure
-// we fall through to the next key automatically.
-const ZEROBOUNCE_API_KEYS = [
-  process.env.ZEROBOUNCE_API_KEY,
-  process.env.ZEROBOUNCE_API_KEY_2,
-].filter((key): key is string => Boolean(key));
-const ZEROBOUNCE_API_URL = "https://api.zerobounce.net/v2/validate";
+const emailValidator = new EmailValidator({
+  timeout: 10000,
+  verifyDomain: true,
+  verifyMailbox: true,
+});
 
 // Concurrency limiter — max N simultaneous SMTP verifications
 const MAX_CONCURRENT = 10;
@@ -118,90 +107,34 @@ export async function POST(request: NextRequest) {
         };
 
         if (cachedDns && !cachedDns.domainValid) {
-          // Domain already known to be invalid — skip the API call
-          verification = {
-            wellFormed: true,
-            validDomain: false,
-            validMailbox: null,
-          };
-        } else if (ZEROBOUNCE_API_KEYS.length === 0) {
-          // No API key configured — fall back to syntax-only checking
-          // rather than silently reporting everything as "good".
+          // Domain already known to be invalid — skip SMTP
           verification = {
             wellFormed: true,
             validDomain: false,
             validMailbox: null,
           };
         } else {
-          verification = {
-            wellFormed: true,
-            validDomain: false,
-            validMailbox: null,
-          };
+          try {
+            const raw = await emailValidator.verify(email);
+            verification = {
+              wellFormed: raw.wellFormed ?? false,
+              validDomain: raw.validDomain ?? false,
+              validMailbox: raw.validMailbox ?? null,
+            };
 
-          for (const apiKey of ZEROBOUNCE_API_KEYS) {
-            try {
-              const apiUrl = `${ZEROBOUNCE_API_URL}?api_key=${apiKey}&email=${encodeURIComponent(email)}`;
-              const apiResponse = await fetch(apiUrl, {
-                signal: AbortSignal.timeout(15000),
+            // Cache the DNS result for this domain
+            if (domain && verification.validDomain !== undefined) {
+              dnsCache.set(domain, {
+                mxFound: verification.validDomain,
+                domainValid: verification.validDomain,
               });
-
-              if (!apiResponse.ok) {
-                // Likely an exhausted/invalid key — try the next one.
-                continue;
-              }
-
-              const apiData = await apiResponse.json();
-
-              // ZeroBounce error responses come back as 200 OK with an
-              // "error" field (e.g. invalid/exhausted key) instead of a
-              // non-2xx status — treat that the same as a failed call.
-              if (apiData?.error) {
-                continue;
-              }
-
-              const status = apiData?.status as
-                | "valid"
-                | "invalid"
-                | "catch-all"
-                | "unknown"
-                | "spamtrap"
-                | "abuse"
-                | "do_not_mail"
-                | undefined;
-
-              const mxFound =
-                apiData?.mx_found === true || apiData?.mx_found === "true";
-
-              // Map ZeroBounce's richer status set onto our simpler
-              // wellFormed/validDomain/validMailbox shape.
-              const wellFormed = status !== "invalid" || mxFound;
-              const validMailbox =
-                status === "valid"
-                  ? true
-                  : status === "invalid"
-                    ? false
-                    : null; // catch-all/unknown/spamtrap/abuse/do_not_mail: can't say for sure
-
-              verification = {
-                wellFormed,
-                validDomain: mxFound,
-                validMailbox,
-              };
-
-              if (domain) {
-                dnsCache.set(domain, {
-                  mxFound,
-                  domainValid: mxFound,
-                });
-              }
-
-              // Got a usable result — no need to try remaining keys.
-              break;
-            } catch {
-              // This key/request failed — try the next key, if any.
-              continue;
             }
+          } catch {
+            verification = {
+              wellFormed: false,
+              validDomain: false,
+              validMailbox: null,
+            };
           }
         }
 

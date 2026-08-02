@@ -38,25 +38,13 @@ cd gmail-checker
 # Install dependencies
 npm install
 
-# Copy environment variables
-cp .env.example .env
-
 # Start development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-ZEROBOUNCE_API_KEY=your_zerobounce_key_here
-ZEROBOUNCE_API_KEY_2=your_second_zerobounce_key_here
-```
-
-Get a free key at [zerobounce.net](https://www.zerobounce.net/apis/email-validation-api) (100 free verifications/month, no card required — sign up with a business/work email domain to activate the free credits). `ZEROBOUNCE_API_KEY_2` is optional — add a second free-tier key from another account to double your monthly quota; the app automatically falls back to it when the first key runs out. Mailbox verification is skipped (marked "unverified") if no key is set.
+No environment variables are required — mailbox verification runs via direct SMTP connections using the `email-deep-validator` library.
 
 ## Usage
 

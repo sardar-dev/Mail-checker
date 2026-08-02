@@ -6,6 +6,12 @@ import { sanitizeInput } from "@/utils/helpers";
 import { dnsCache, emailCache } from "@/lib/cache";
 import type { ValidationResult } from "@/types";
 
+// Force the Node.js runtime (required for raw SMTP/TCP sockets) and give
+// Vercel more time per request than the 10s Hobby-plan default, since SMTP
+// checks are inherently slow (mail servers can take seconds to respond).
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 // SMTP mailbox verification is enabled — Vercel's Node.js serverless
 // runtime supports raw TCP sockets, unlike Cloudflare Workers. If this
 // project ever moves back to an edge/Workers-based host, this should be
@@ -26,8 +32,8 @@ const MAX_BODY_SIZE = 10 * 1024;
 // Maximum emails per request
 const MAX_EMAILS = 70;
 
-// Request timeout (30 seconds)
-const REQUEST_TIMEOUT_MS = 30_000;
+// Request timeout (55 seconds — stays under the 60s function limit above)
+const REQUEST_TIMEOUT_MS = 55_000;
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";
@@ -88,14 +94,13 @@ export async function POST(request: NextRequest) {
 
       const sanitizedEmails = emails.map((e) => sanitizeInput(e.toLowerCase()));
 
-      const results: ValidationResult[] = [];
-
-      for (const email of sanitizedEmails) {
+      const checkOneEmail = async (
+        email: string
+      ): Promise<ValidationResult> => {
         // Check email cache first
         const cached = emailCache.get(email);
         if (cached) {
-          results.push(buildResult(email, cached));
-          continue;
+          return buildResult(email, cached);
         }
 
         // Check DNS cache for the domain
@@ -142,8 +147,15 @@ export async function POST(request: NextRequest) {
 
         // Cache the full email result
         emailCache.set(email, verification);
-        results.push(buildResult(email, verification));
-      }
+        return buildResult(email, verification);
+      };
+
+      // Run all emails in this batch concurrently instead of one at a
+      // time — sequential checks could take up to 10s EACH, easily
+      // blowing past the request/function time limit for a 5-email batch.
+      const results: ValidationResult[] = await Promise.all(
+        sanitizedEmails.map(checkOneEmail)
+      );
 
       return NextResponse.json(
         { results },

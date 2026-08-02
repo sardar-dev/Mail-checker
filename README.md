@@ -47,13 +47,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/app_db
-```
+No environment variables or database are required.
 
 ## Usage
 

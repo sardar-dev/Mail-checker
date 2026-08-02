@@ -6,10 +6,17 @@ import { sanitizeInput } from "@/utils/helpers";
 import { dnsCache, emailCache } from "@/lib/cache";
 import type { ValidationResult } from "@/types";
 
+// NOTE: verifyMailbox is disabled on purpose. It requires opening a raw
+// SMTP (TCP) socket to the recipient's mail server, which Cloudflare's
+// Workers runtime does not support — every attempt was silently failing
+// after burning the full timeout, then falling back to "unverified"
+// anyway. Disabling it skips the doomed connection attempt entirely,
+// making checks fast and the "(unverified)" result honest instead of
+// something that looked like a real check but never was.
 const emailValidator = new EmailValidator({
   timeout: 10000,
   verifyDomain: true,
-  verifyMailbox: true,
+  verifyMailbox: false,
 });
 
 // Concurrency limiter — max N simultaneous SMTP verifications

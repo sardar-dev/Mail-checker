@@ -47,7 +47,15 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-No environment variables or database are required.
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+ABSTRACT_API_KEY=your_abstractapi_key_here
+```
+
+Get a free key at [abstractapi.com](https://www.abstractapi.com/api/email-verification-validation-api) (100 free verifications/month, no card required). Mailbox verification is skipped (marked "unverified") if this is not set.
 
 ## Usage
 

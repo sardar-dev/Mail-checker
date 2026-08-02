@@ -1,26 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import EmailValidator from "email-deep-validator";
 import { buildResult } from "@/lib/validators";
 import { rateLimit } from "@/utils/rate-limit";
 import { sanitizeInput } from "@/utils/helpers";
 import { dnsCache, emailCache } from "@/lib/cache";
 import type { ValidationResult } from "@/types";
 
-// Force the Node.js runtime (required for raw SMTP/TCP sockets) and give
-// Vercel more time per request than the 10s Hobby-plan default, since SMTP
-// checks are inherently slow (mail servers can take seconds to respond).
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// SMTP mailbox verification is enabled — Vercel's Node.js serverless
-// runtime supports raw TCP sockets, unlike Cloudflare Workers. If this
-// project ever moves back to an edge/Workers-based host, this should be
-// set back to false (see git history for the Cloudflare-compatible version).
-const emailValidator = new EmailValidator({
-  timeout: 10000,
-  verifyDomain: true,
-  verifyMailbox: true,
-});
+// Real mailbox verification requires an SMTP (port 25) handshake with the
+// recipient's mail server. Every cloud/serverless host (Vercel/AWS,
+// Cloudflare, GCP) blocks outbound port 25 by default as an anti-spam
+// measure, so that check can never succeed from here directly. Instead we
+// delegate it to AbstractAPI's Email Validation API, which performs the
+// SMTP check on its own whitelisted infrastructure.
+// https://www.abstractapi.com/api/email-verification-validation-api
+const ABSTRACT_API_KEY = process.env.ABSTRACT_API_KEY;
+const ABSTRACT_API_URL = "https://emailvalidation.abstractapi.com/v1/";
 
 // Concurrency limiter — max N simultaneous SMTP verifications
 const MAX_CONCURRENT = 10;
@@ -114,7 +110,15 @@ export async function POST(request: NextRequest) {
         };
 
         if (cachedDns && !cachedDns.domainValid) {
-          // Domain already known to be invalid — skip SMTP
+          // Domain already known to be invalid — skip the API call
+          verification = {
+            wellFormed: true,
+            validDomain: false,
+            validMailbox: null,
+          };
+        } else if (!ABSTRACT_API_KEY) {
+          // No API key configured — fall back to syntax-only checking
+          // rather than silently reporting everything as "good".
           verification = {
             wellFormed: true,
             validDomain: false,
@@ -122,23 +126,52 @@ export async function POST(request: NextRequest) {
           };
         } else {
           try {
-            const raw = await emailValidator.verify(email);
+            const apiUrl = `${ABSTRACT_API_URL}?api_key=${ABSTRACT_API_KEY}&email=${encodeURIComponent(email)}`;
+            const apiResponse = await fetch(apiUrl, {
+              signal: AbortSignal.timeout(15000),
+            });
+
+            if (!apiResponse.ok) {
+              throw new Error(`AbstractAPI request failed: ${apiResponse.status}`);
+            }
+
+            const apiData = await apiResponse.json();
+
+            const wellFormed = apiData?.is_valid_format?.value ?? false;
+            const mxFound = apiData?.is_mx_found?.value ?? false;
+            const smtpValid = apiData?.is_smtp_valid?.value ?? null;
+            const deliverability = apiData?.deliverability as
+              | "DELIVERABLE"
+              | "UNDELIVERABLE"
+              | "UNKNOWN"
+              | undefined;
+
+            // deliverability is AbstractAPI's overall verdict; fall back
+            // to the raw smtp flag if it's missing for some reason.
+            const validMailbox =
+              deliverability === "DELIVERABLE"
+                ? true
+                : deliverability === "UNDELIVERABLE"
+                  ? false
+                  : smtpValid;
+
             verification = {
-              wellFormed: raw.wellFormed ?? false,
-              validDomain: raw.validDomain ?? false,
-              validMailbox: raw.validMailbox ?? null,
+              wellFormed,
+              validDomain: mxFound,
+              validMailbox,
             };
 
-            // Cache the DNS result for this domain
-            if (domain && verification.validDomain !== undefined) {
+            if (domain) {
               dnsCache.set(domain, {
-                mxFound: verification.validDomain,
-                domainValid: verification.validDomain,
+                mxFound,
+                domainValid: mxFound,
               });
             }
           } catch {
+            // API call failed (network issue, rate limit, bad key, etc.)
+            // — report as unable to verify rather than guessing "good".
             verification = {
-              wellFormed: false,
+              wellFormed: true,
               validDomain: false,
               validMailbox: null,
             };

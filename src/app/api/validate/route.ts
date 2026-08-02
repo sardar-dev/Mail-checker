@@ -15,7 +15,15 @@ export const maxDuration = 60;
 // delegate it to AbstractAPI's Email Validation API, which performs the
 // SMTP check on its own whitelisted infrastructure.
 // https://www.abstractapi.com/api/email-verification-validation-api
-const ABSTRACT_API_KEY = process.env.ABSTRACT_API_KEY;
+//
+// Supports multiple keys (ABSTRACT_API_KEY, ABSTRACT_API_KEY_2, ...) so
+// several free-tier accounts can be combined for more monthly quota.
+// When a key's quota runs out, requests using it fail with 401/402/429 —
+// on any failure we fall through to the next key automatically.
+const ABSTRACT_API_KEYS = [
+  process.env.ABSTRACT_API_KEY,
+  process.env.ABSTRACT_API_KEY_2,
+].filter((key): key is string => Boolean(key));
 const ABSTRACT_API_URL = "https://emailvalidation.abstractapi.com/v1/";
 
 // Concurrency limiter — max N simultaneous SMTP verifications
@@ -116,7 +124,7 @@ export async function POST(request: NextRequest) {
             validDomain: false,
             validMailbox: null,
           };
-        } else if (!ABSTRACT_API_KEY) {
+        } else if (ABSTRACT_API_KEYS.length === 0) {
           // No API key configured — fall back to syntax-only checking
           // rather than silently reporting everything as "good".
           verification = {
@@ -125,56 +133,63 @@ export async function POST(request: NextRequest) {
             validMailbox: null,
           };
         } else {
-          try {
-            const apiUrl = `${ABSTRACT_API_URL}?api_key=${ABSTRACT_API_KEY}&email=${encodeURIComponent(email)}`;
-            const apiResponse = await fetch(apiUrl, {
-              signal: AbortSignal.timeout(15000),
-            });
+          verification = {
+            wellFormed: true,
+            validDomain: false,
+            validMailbox: null,
+          };
 
-            if (!apiResponse.ok) {
-              throw new Error(`AbstractAPI request failed: ${apiResponse.status}`);
-            }
-
-            const apiData = await apiResponse.json();
-
-            const wellFormed = apiData?.is_valid_format?.value ?? false;
-            const mxFound = apiData?.is_mx_found?.value ?? false;
-            const smtpValid = apiData?.is_smtp_valid?.value ?? null;
-            const deliverability = apiData?.deliverability as
-              | "DELIVERABLE"
-              | "UNDELIVERABLE"
-              | "UNKNOWN"
-              | undefined;
-
-            // deliverability is AbstractAPI's overall verdict; fall back
-            // to the raw smtp flag if it's missing for some reason.
-            const validMailbox =
-              deliverability === "DELIVERABLE"
-                ? true
-                : deliverability === "UNDELIVERABLE"
-                  ? false
-                  : smtpValid;
-
-            verification = {
-              wellFormed,
-              validDomain: mxFound,
-              validMailbox,
-            };
-
-            if (domain) {
-              dnsCache.set(domain, {
-                mxFound,
-                domainValid: mxFound,
+          for (const apiKey of ABSTRACT_API_KEYS) {
+            try {
+              const apiUrl = `${ABSTRACT_API_URL}?api_key=${apiKey}&email=${encodeURIComponent(email)}`;
+              const apiResponse = await fetch(apiUrl, {
+                signal: AbortSignal.timeout(15000),
               });
+
+              if (!apiResponse.ok) {
+                // Likely an exhausted/invalid key — try the next one.
+                continue;
+              }
+
+              const apiData = await apiResponse.json();
+
+              const wellFormed = apiData?.is_valid_format?.value ?? false;
+              const mxFound = apiData?.is_mx_found?.value ?? false;
+              const smtpValid = apiData?.is_smtp_valid?.value ?? null;
+              const deliverability = apiData?.deliverability as
+                | "DELIVERABLE"
+                | "UNDELIVERABLE"
+                | "UNKNOWN"
+                | undefined;
+
+              // deliverability is AbstractAPI's overall verdict; fall
+              // back to the raw smtp flag if it's missing for some reason.
+              const validMailbox =
+                deliverability === "DELIVERABLE"
+                  ? true
+                  : deliverability === "UNDELIVERABLE"
+                    ? false
+                    : smtpValid;
+
+              verification = {
+                wellFormed,
+                validDomain: mxFound,
+                validMailbox,
+              };
+
+              if (domain) {
+                dnsCache.set(domain, {
+                  mxFound,
+                  domainValid: mxFound,
+                });
+              }
+
+              // Got a usable result — no need to try remaining keys.
+              break;
+            } catch {
+              // This key/request failed — try the next key, if any.
+              continue;
             }
-          } catch {
-            // API call failed (network issue, rate limit, bad key, etc.)
-            // — report as unable to verify rather than guessing "good".
-            verification = {
-              wellFormed: true,
-              validDomain: false,
-              validMailbox: null,
-            };
           }
         }
 

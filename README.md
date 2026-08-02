@@ -53,9 +53,10 @@ Create a `.env` file in the root directory:
 
 ```env
 ABSTRACT_API_KEY=your_abstractapi_key_here
+ABSTRACT_API_KEY_2=your_second_abstractapi_key_here
 ```
 
-Get a free key at [abstractapi.com](https://www.abstractapi.com/api/email-verification-validation-api) (100 free verifications/month, no card required). Mailbox verification is skipped (marked "unverified") if this is not set.
+Get a free key at [abstractapi.com](https://www.abstractapi.com/api/email-verification-validation-api) (100 free verifications/month, no card required). `ABSTRACT_API_KEY_2` is optional — add a second free-tier key from another account to double your monthly quota; the app automatically falls back to it when the first key runs out. Mailbox verification is skipped (marked "unverified") if no key is set.
 
 ## Usage
 

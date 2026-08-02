@@ -6,17 +6,14 @@ import { sanitizeInput } from "@/utils/helpers";
 import { dnsCache, emailCache } from "@/lib/cache";
 import type { ValidationResult } from "@/types";
 
-// NOTE: verifyMailbox is disabled on purpose. It requires opening a raw
-// SMTP (TCP) socket to the recipient's mail server, which Cloudflare's
-// Workers runtime does not support — every attempt was silently failing
-// after burning the full timeout, then falling back to "unverified"
-// anyway. Disabling it skips the doomed connection attempt entirely,
-// making checks fast and the "(unverified)" result honest instead of
-// something that looked like a real check but never was.
+// SMTP mailbox verification is enabled — Vercel's Node.js serverless
+// runtime supports raw TCP sockets, unlike Cloudflare Workers. If this
+// project ever moves back to an edge/Workers-based host, this should be
+// set back to false (see git history for the Cloudflare-compatible version).
 const emailValidator = new EmailValidator({
   timeout: 10000,
   verifyDomain: true,
-  verifyMailbox: false,
+  verifyMailbox: true,
 });
 
 // Concurrency limiter — max N simultaneous SMTP verifications

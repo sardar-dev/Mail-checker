@@ -143,12 +143,11 @@ export async function POST(request: NextRequest) {
         return buildResult(email, verification);
       };
 
-      // Run all emails in this batch concurrently instead of one at a
-      // time — sequential checks could take up to 10s EACH, easily
-      // blowing past the request/function time limit for a 5-email batch.
-      const results: ValidationResult[] = await Promise.all(
-        sanitizedEmails.map(checkOneEmail)
-      );
+      // Validate each email in order so SMTP checks run one at a time.
+      const results: ValidationResult[] = [];
+      for (const email of sanitizedEmails) {
+        results.push(await checkOneEmail(email));
+      }
 
       return NextResponse.json(
         { results },

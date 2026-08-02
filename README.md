@@ -44,7 +44,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-No environment variables are required — mailbox verification runs via direct SMTP connections using the `email-deep-validator` library.
+No environment variables are required — mailbox verification runs via direct SMTP connections using a custom email validation library based on `email-deep-validator`.
 
 ## Usage
 

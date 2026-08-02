@@ -12,19 +12,19 @@ export const maxDuration = 60;
 // recipient's mail server. Every cloud/serverless host (Vercel/AWS,
 // Cloudflare, GCP) blocks outbound port 25 by default as an anti-spam
 // measure, so that check can never succeed from here directly. Instead we
-// delegate it to AbstractAPI's Email Validation API, which performs the
+// delegate it to ZeroBounce's Email Validation API, which performs the
 // SMTP check on its own whitelisted infrastructure.
-// https://www.abstractapi.com/api/email-verification-validation-api
+// https://www.zerobounce.net/apis/email-validation-api
 //
-// Supports multiple keys (ABSTRACT_API_KEY, ABSTRACT_API_KEY_2, ...) so
-// several free-tier accounts can be combined for more monthly quota.
-// When a key's quota runs out, requests using it fail with 401/402/429 —
-// on any failure we fall through to the next key automatically.
-const ABSTRACT_API_KEYS = [
-  process.env.ABSTRACT_API_KEY,
-  process.env.ABSTRACT_API_KEY_2,
+// Supports multiple keys (ZEROBOUNCE_API_KEY, ZEROBOUNCE_API_KEY_2, ...)
+// so several free-tier accounts can be combined for more monthly quota.
+// When a key's quota runs out, requests using it fail — on any failure
+// we fall through to the next key automatically.
+const ZEROBOUNCE_API_KEYS = [
+  process.env.ZEROBOUNCE_API_KEY,
+  process.env.ZEROBOUNCE_API_KEY_2,
 ].filter((key): key is string => Boolean(key));
-const ABSTRACT_API_URL = "https://emailvalidation.abstractapi.com/v1/";
+const ZEROBOUNCE_API_URL = "https://api.zerobounce.net/v2/validate";
 
 // Concurrency limiter — max N simultaneous SMTP verifications
 const MAX_CONCURRENT = 10;
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
             validDomain: false,
             validMailbox: null,
           };
-        } else if (ABSTRACT_API_KEYS.length === 0) {
+        } else if (ZEROBOUNCE_API_KEYS.length === 0) {
           // No API key configured — fall back to syntax-only checking
           // rather than silently reporting everything as "good".
           verification = {
@@ -139,9 +139,9 @@ export async function POST(request: NextRequest) {
             validMailbox: null,
           };
 
-          for (const apiKey of ABSTRACT_API_KEYS) {
+          for (const apiKey of ZEROBOUNCE_API_KEYS) {
             try {
-              const apiUrl = `${ABSTRACT_API_URL}?api_key=${apiKey}&email=${encodeURIComponent(email)}`;
+              const apiUrl = `${ZEROBOUNCE_API_URL}?api_key=${apiKey}&email=${encodeURIComponent(email)}`;
               const apiResponse = await fetch(apiUrl, {
                 signal: AbortSignal.timeout(15000),
               });
@@ -153,23 +153,35 @@ export async function POST(request: NextRequest) {
 
               const apiData = await apiResponse.json();
 
-              const wellFormed = apiData?.is_valid_format?.value ?? false;
-              const mxFound = apiData?.is_mx_found?.value ?? false;
-              const smtpValid = apiData?.is_smtp_valid?.value ?? null;
-              const deliverability = apiData?.deliverability as
-                | "DELIVERABLE"
-                | "UNDELIVERABLE"
-                | "UNKNOWN"
+              // ZeroBounce error responses come back as 200 OK with an
+              // "error" field (e.g. invalid/exhausted key) instead of a
+              // non-2xx status — treat that the same as a failed call.
+              if (apiData?.error) {
+                continue;
+              }
+
+              const status = apiData?.status as
+                | "valid"
+                | "invalid"
+                | "catch-all"
+                | "unknown"
+                | "spamtrap"
+                | "abuse"
+                | "do_not_mail"
                 | undefined;
 
-              // deliverability is AbstractAPI's overall verdict; fall
-              // back to the raw smtp flag if it's missing for some reason.
+              const mxFound =
+                apiData?.mx_found === true || apiData?.mx_found === "true";
+
+              // Map ZeroBounce's richer status set onto our simpler
+              // wellFormed/validDomain/validMailbox shape.
+              const wellFormed = status !== "invalid" || mxFound;
               const validMailbox =
-                deliverability === "DELIVERABLE"
+                status === "valid"
                   ? true
-                  : deliverability === "UNDELIVERABLE"
+                  : status === "invalid"
                     ? false
-                    : smtpValid;
+                    : null; // catch-all/unknown/spamtrap/abuse/do_not_mail: can't say for sure
 
               verification = {
                 wellFormed,

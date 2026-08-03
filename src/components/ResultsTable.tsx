@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { ValidationResult, EmailStatus } from "@/types";
 import {
@@ -18,24 +18,32 @@ interface ResultsTableProps {
 }
 
 function StatusBadge({ status }: { status: EmailStatus }) {
-  if (status === "good") {
+  if (status === "live") {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-400/10 border border-emerald-400/20 text-emerald-400">
         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
         </svg>
-        Good
+        Live
       </span>
     );
   }
 
-  if (status === "verified") {
+  if (status === "not_exist") {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-400/10 border border-amber-400/20 text-amber-400">
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
-        Verified
+        Not Exist
+      </span>
+    );
+  }
+
+  if (status === "unknown") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-400/10 border border-slate-400/20 text-slate-300">
+        Unknown
       </span>
     );
   }
@@ -52,39 +60,50 @@ function StatusBadge({ status }: { status: EmailStatus }) {
 
 export default function ResultsTable({ results, onClear }: ResultsTableProps) {
   const [copied, setCopied] = useState(false);
+  const [filter, setFilter] = useState<EmailStatus | "all">("all");
+  const [query, setQuery] = useState("");
+
+  const filteredResults = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return results.filter((result) =>
+      (filter === "all" || result.status === filter) &&
+      (!normalizedQuery || result.email.toLowerCase().includes(normalizedQuery))
+    );
+  }, [filter, query, results]);
 
   const handleCopy = useCallback(async () => {
-    const text = resultsToText(results);
+    const text = resultsToText(filteredResults);
     const success = await copyToClipboard(text);
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [results]);
+  }, [filteredResults]);
 
   const handleDownloadTxt = useCallback(() => {
-    downloadFile(resultsToText(results), "gmail-check-results.txt", "text/plain");
-  }, [results]);
+    downloadFile(resultsToText(filteredResults), "gmail-check-results.txt", "text/plain");
+  }, [filteredResults]);
 
   const handleDownloadCSV = useCallback(() => {
-    downloadFile(resultsToCSV(results), "gmail-check-results.csv", "text/csv");
-  }, [results]);
+    downloadFile(resultsToCSV(filteredResults), "gmail-check-results.csv", "text/csv");
+  }, [filteredResults]);
 
   const handleDownloadJSON = useCallback(() => {
     downloadFile(
-      resultsToJSON(results),
+      resultsToJSON(filteredResults),
       "gmail-check-results.json",
       "application/json"
     );
-  }, [results]);
+  }, [filteredResults]);
 
   const handlePrint = useCallback(() => {
     printResults();
   }, []);
 
   const getRowBg = (status: EmailStatus) => {
-    if (status === "good") return "hover:bg-emerald-500/[0.03]";
-    if (status === "verified") return "hover:bg-amber-500/[0.03]";
+    if (status === "live") return "hover:bg-emerald-500/[0.03]";
+    if (status === "not_exist") return "hover:bg-amber-500/[0.03]";
+    if (status === "unknown") return "hover:bg-slate-500/[0.03]";
     return "hover:bg-red-500/[0.03]";
   };
 
@@ -97,7 +116,7 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
             <h3 className="text-xl font-bold text-white">
               Results
               <span className="ml-2 text-sm font-normal text-gray-400">
-                ({results.length} email{results.length !== 1 ? "s" : ""})
+                ({filteredResults.length} of {results.length} email{results.length !== 1 ? "s" : ""})
               </span>
             </h3>
 
@@ -174,6 +193,29 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
           </div>
         </div>
 
+        <div className="px-6 py-4 border-b border-white/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter results by status">
+            {(["all", "live", "not_exist", "unknown", "invalid"] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${filter === status ? "border-blue-400/50 bg-blue-400/15 text-blue-200" : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/10 hover:text-white"}`}
+              >
+                {status === "all" ? `All (${results.length})` : `${status === "not_exist" ? "Not Exist" : status[0].toUpperCase() + status.slice(1)} (${results.filter((result) => result.status === status).length})`}
+              </button>
+            ))}
+          </div>
+          <label className="relative block sm:w-56">
+            <span className="sr-only">Search results</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search email..."
+              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder-gray-500 outline-none transition focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/50"
+            />
+          </label>
+        </div>
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full" role="table" aria-label="Email validation results">
@@ -186,7 +228,14 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {results.map((result, index) => (
+              {filteredResults.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
+                    No results match this filter.
+                  </td>
+                </tr>
+              )}
+              {filteredResults.map((result, index) => (
                 <motion.tr
                   key={result.email}
                   initial={{ opacity: 0, x: -10 }}

@@ -66,8 +66,9 @@ function CopyButton({ emails, label }: { emails: string[]; label: string }) {
 
 export default function SummaryCards({ summary, results }: SummaryCardsProps) {
   const allEmails = results.map((r) => r.email);
-  const goodEmails = results.filter((r) => r.status === "good").map((r) => r.email);
-  const verifiedEmails = results.filter((r) => r.status === "verified").map((r) => r.email);
+  const liveEmails = results.filter((r) => r.status === "live").map((r) => r.email);
+  const notExistEmails = results.filter((r) => r.status === "not_exist").map((r) => r.email);
+  const unknownEmails = results.filter((r) => r.status === "unknown").map((r) => r.email);
   const invalidEmails = results.filter((r) => r.status === "invalid").map((r) => r.email);
 
   const cards = [
@@ -84,9 +85,9 @@ export default function SummaryCards({ summary, results }: SummaryCardsProps) {
       bg: "bg-blue-400/10",
     },
     {
-      label: "Good",
-      value: summary.good,
-      copyEmails: goodEmails,
+      label: "Live",
+      value: summary.live,
+      copyEmails: liveEmails,
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -96,9 +97,9 @@ export default function SummaryCards({ summary, results }: SummaryCardsProps) {
       bg: "bg-emerald-400/10",
     },
     {
-      label: "Verified",
-      value: summary.verified,
-      copyEmails: verifiedEmails,
+      label: "Not Exist",
+      value: summary.notExist,
+      copyEmails: notExistEmails,
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -106,6 +107,18 @@ export default function SummaryCards({ summary, results }: SummaryCardsProps) {
       ),
       color: "text-amber-400",
       bg: "bg-amber-400/10",
+    },
+    {
+      label: "Unknown",
+      value: summary.unknown,
+      copyEmails: unknownEmails,
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M12 14a4 4 0 10-4-4" />
+        </svg>
+      ),
+      color: "text-slate-300",
+      bg: "bg-slate-400/10",
     },
     {
       label: "Invalid",

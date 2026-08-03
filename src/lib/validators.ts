@@ -124,25 +124,19 @@ export function isRoleAccount(email: string): boolean {
 }
 
 /**
- * Status mapping:
- *   - "good"     → SMTP confirmed mailbox exists, or domain valid but can't verify (email looks good)
- *   - "verified" → SMTP confirmed mailbox does NOT exist (verification completed, mailbox non-existent)
- *   - "invalid"  → Syntax error or domain does not exist
+ * A mailbox is only labelled live or not-exist when SMTP returned a
+ * definitive recipient result. Timeouts, blocked SMTP, catch-all domains,
+ * and Gmail all remain unknown rather than being presented as live.
  */
 export function determineStatus(data: {
   wellFormed: boolean;
   validDomain: boolean;
   validMailbox: boolean | null;
 }): EmailStatus {
-  // Invalid: syntax or domain problems
-  if (!data.wellFormed) return "invalid";
-  if (!data.validDomain) return "invalid";
-
-  // Verified: SMTP confirmed the mailbox does NOT exist
-  if (data.validMailbox === false) return "verified";
-
-  // Good: SMTP confirmed mailbox exists, or couldn't verify (email looks good)
-  return "good";
+  if (!data.wellFormed || !data.validDomain) return "invalid";
+  if (data.validMailbox === true) return "live";
+  if (data.validMailbox === false) return "not_exist";
+  return "unknown";
 }
 
 export function calculateScore(data: {
@@ -153,8 +147,8 @@ export function calculateScore(data: {
 }): number {
   let score = 0;
 
-  if (data.status === "good") score += 60;
-  else if (data.status === "verified") score += 30;
+  if (data.status === "live") score += 60;
+  else if (data.status === "unknown") score += 30;
   else return 0;
 
   if (data.gmail) score += 15;
@@ -170,8 +164,8 @@ export function calculateConfidence(data: {
 }): number {
   let confidence = 0;
 
-  if (data.status === "good") confidence += 60;
-  else if (data.status === "verified") confidence += 30;
+  if (data.status === "live") confidence += 60;
+  else if (data.status === "unknown") confidence += 30;
   else return 0;
 
   if (data.gmail) confidence += 20;
@@ -193,20 +187,19 @@ export function generateReason(data: {
   if (data.disposable) return "Disposable email address detected";
   if (data.roleAccount) return "Role-based email address";
 
-  if (data.status === "verified") {
-    // Mailbox confirmed non-existent
-    if (data.gmail) return "Gmail address verified — mailbox does not exist";
-    return "Email verified — mailbox does not exist";
+  if (data.status === "not_exist") {
+    return "Mail server rejected this mailbox";
   }
 
-  if (data.status === "good") {
-    if (data.validMailbox === true) {
-      if (data.gmail) return "Valid Gmail Address";
-      return "Valid Email Address";
+  if (data.status === "live") {
+    return "Mail server accepted this mailbox";
+  }
+
+  if (data.status === "unknown") {
+    if (data.gmail) {
+      return "Gmail mailbox status cannot be confirmed through SMTP";
     }
-    // validMailbox === null (couldn't verify)
-    if (data.gmail) return "Valid Gmail Address (unverified)";
-    return "Valid Email Address (unverified)";
+    return "Mailbox status could not be confirmed";
   }
 
   return "Invalid email";
@@ -227,7 +220,7 @@ export function buildResult(
   const roleAccount = isRoleAccount(email);
 
   const status = determineStatus(smtpResult);
-  const valid = status === "good";
+  const valid = status === "live";
   const syntax = smtpResult.wellFormed;
   const domainValid = smtpResult.validDomain;
   const mx = smtpResult.validDomain;

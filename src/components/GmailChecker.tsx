@@ -23,8 +23,10 @@ export default function GmailChecker() {
   });
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [error, setError] = useState("");
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Parse and count emails in real-time
   const parsed = inputText.trim() === "" ? { emails: [], duplicatesRemoved: 0 } : parseEmails(inputText);
@@ -49,6 +51,39 @@ export default function GmailChecker() {
       setError("Unable to access clipboard. Please paste manually with Ctrl+V.");
     }
   }, []);
+
+  const loadFile = useCallback(async (file: File) => {
+    const supportedFile = file.name.toLowerCase().endsWith(".txt") || file.name.toLowerCase().endsWith(".csv");
+    if (!supportedFile) {
+      setError("Please upload a TXT or CSV file.");
+      return;
+    }
+    if (file.size > 10 * 1024) {
+      setError("File is too large. Please upload a file smaller than 10 KB.");
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      setInputText(text);
+      setError("");
+    } catch {
+      setError("Unable to read that file. Please try another TXT or CSV file.");
+    }
+  }, []);
+
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) void loadFile(file);
+    event.target.value = "";
+  }, [loadFile]);
+
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingFile(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) void loadFile(file);
+  }, [loadFile]);
 
   const handleClear = useCallback(() => {
     setInputText("");
@@ -201,8 +236,9 @@ export default function GmailChecker() {
 
     // Set final summary
     const processingTime = Date.now() - checkStartTime;
-    const verifiedCount = allResults.filter((r) => r.status === "verified").length;
-    const goodCount = allResults.filter((r) => r.status === "good").length;
+    const liveCount = allResults.filter((r) => r.status === "live").length;
+    const notExistCount = allResults.filter((r) => r.status === "not_exist").length;
+    const unknownCount = allResults.filter((r) => r.status === "unknown").length;
     const invalidCount = allResults.filter((r) => r.status === "invalid").length;
     const avgScore =
       allResults.length > 0
@@ -213,8 +249,9 @@ export default function GmailChecker() {
 
     setSummary({
       total: allResults.length,
-      verified: verifiedCount,
-      good: goodCount,
+      live: liveCount,
+      notExist: notExistCount,
+      unknown: unknownCount,
       invalid: invalidCount,
       duplicatesRemoved,
       processingTime,
@@ -256,8 +293,28 @@ export default function GmailChecker() {
             Check Gmail Addresses
           </h2>
 
-          {/* Textarea */}
-          <div className="relative mb-4">
+          {/* Textarea / file drop zone */}
+          <div
+            className={`relative mb-4 rounded-xl transition-colors ${isDraggingFile ? "ring-2 ring-blue-400/70 bg-blue-500/10" : ""}`}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              if (!progress.isChecking) setIsDraggingFile(true);
+            }}
+            onDragOver={(event) => event.preventDefault()}
+            onDragLeave={(event) => {
+              if (event.currentTarget === event.target) setIsDraggingFile(false);
+            }}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.csv,text/plain,text/csv"
+              className="sr-only"
+              onChange={handleFileChange}
+              disabled={progress.isChecking}
+              aria-label="Upload a TXT or CSV file"
+            />
             <textarea
               ref={textareaRef}
               value={inputText}
@@ -268,6 +325,11 @@ export default function GmailChecker() {
               aria-label="Enter Gmail addresses to validate"
               aria-describedby="email-counters"
             />
+            {isDraggingFile && !progress.isChecking && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-xl border-2 border-dashed border-blue-400 bg-slate-950/90 text-sm font-medium text-blue-200 pointer-events-none">
+                Drop a TXT or CSV file to load addresses
+              </div>
+            )}
 
             {/* Counters */}
             <div
@@ -327,6 +389,18 @@ export default function GmailChecker() {
                 />
               </svg>
               Paste
+            </button>
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={progress.isChecking}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              aria-label="Upload TXT or CSV file"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 18a4.6 4.6 0 01.88-9.11A5.5 5.5 0 0118.5 11.5H19a3 3 0 010 6h-2m-5-8v9m0-9l-3 3m3-3l3 3" />
+              </svg>
+              Upload TXT/CSV
             </button>
 
             <button

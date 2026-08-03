@@ -143,9 +143,7 @@ export async function POST(request: NextRequest) {
         return buildResult(email, verification);
       };
 
-      // Check emails one at a time, sequentially, as requested — note
-      // this means a batch of N emails can take up to N * 10s, so large
-      // batches are more likely to hit the request timeout below.
+      // Validate each email in order so SMTP checks run one at a time.
       const results: ValidationResult[] = [];
       for (const email of sanitizedEmails) {
         results.push(await checkOneEmail(email));

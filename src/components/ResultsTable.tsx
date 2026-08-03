@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { ValidationResult, EmailStatus } from "@/types";
 import {
@@ -60,31 +60,41 @@ function StatusBadge({ status }: { status: EmailStatus }) {
 
 export default function ResultsTable({ results, onClear }: ResultsTableProps) {
   const [copied, setCopied] = useState(false);
+  const [filter, setFilter] = useState<EmailStatus | "all">("all");
+  const [query, setQuery] = useState("");
+
+  const filteredResults = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return results.filter((result) =>
+      (filter === "all" || result.status === filter) &&
+      (!normalizedQuery || result.email.toLowerCase().includes(normalizedQuery))
+    );
+  }, [filter, query, results]);
 
   const handleCopy = useCallback(async () => {
-    const text = resultsToText(results);
+    const text = resultsToText(filteredResults);
     const success = await copyToClipboard(text);
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [results]);
+  }, [filteredResults]);
 
   const handleDownloadTxt = useCallback(() => {
-    downloadFile(resultsToText(results), "gmail-check-results.txt", "text/plain");
-  }, [results]);
+    downloadFile(resultsToText(filteredResults), "gmail-check-results.txt", "text/plain");
+  }, [filteredResults]);
 
   const handleDownloadCSV = useCallback(() => {
-    downloadFile(resultsToCSV(results), "gmail-check-results.csv", "text/csv");
-  }, [results]);
+    downloadFile(resultsToCSV(filteredResults), "gmail-check-results.csv", "text/csv");
+  }, [filteredResults]);
 
   const handleDownloadJSON = useCallback(() => {
     downloadFile(
-      resultsToJSON(results),
+      resultsToJSON(filteredResults),
       "gmail-check-results.json",
       "application/json"
     );
-  }, [results]);
+  }, [filteredResults]);
 
   const handlePrint = useCallback(() => {
     printResults();
@@ -106,7 +116,7 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
             <h3 className="text-xl font-bold text-white">
               Results
               <span className="ml-2 text-sm font-normal text-gray-400">
-                ({results.length} email{results.length !== 1 ? "s" : ""})
+                ({filteredResults.length} of {results.length} email{results.length !== 1 ? "s" : ""})
               </span>
             </h3>
 
@@ -183,6 +193,29 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
           </div>
         </div>
 
+        <div className="px-6 py-4 border-b border-white/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter results by status">
+            {(["all", "live", "not_exist", "unknown", "invalid"] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${filter === status ? "border-blue-400/50 bg-blue-400/15 text-blue-200" : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/10 hover:text-white"}`}
+              >
+                {status === "all" ? `All (${results.length})` : `${status === "not_exist" ? "Not Exist" : status[0].toUpperCase() + status.slice(1)} (${results.filter((result) => result.status === status).length})`}
+              </button>
+            ))}
+          </div>
+          <label className="relative block sm:w-56">
+            <span className="sr-only">Search results</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search email..."
+              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder-gray-500 outline-none transition focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/50"
+            />
+          </label>
+        </div>
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full" role="table" aria-label="Email validation results">
@@ -195,7 +228,14 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {results.map((result, index) => (
+              {filteredResults.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
+                    No results match this filter.
+                  </td>
+                </tr>
+              )}
+              {filteredResults.map((result, index) => (
                 <motion.tr
                   key={result.email}
                   initial={{ opacity: 0, x: -10 }}

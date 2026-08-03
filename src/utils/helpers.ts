@@ -35,18 +35,17 @@ export function parseEmails(input: string): {
   emails: string[];
   duplicatesRemoved: number;
 } {
-  const lines = input
-    .split(/[\n,;]+/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
+  // Extract addresses rather than treating an entire CSV/combo line as an
+  // address. This accepts pasted text, CSV exports, and `email|metadata`
+  // records without accidentally appending the metadata to the address.
+  const emailPattern = /[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+/gi;
+  const matches = input.match(emailPattern) ?? [];
   const seen = new Set<string>();
   const unique: string[] = [];
   let duplicates = 0;
 
-  for (const line of lines) {
-    const email = sanitizeInput(line).toLowerCase();
-    if (email.length === 0) continue;
+  for (const match of matches) {
+    const email = match.toLowerCase();
     if (seen.has(email)) {
       duplicates++;
       continue;

@@ -201,8 +201,9 @@ export default function GmailChecker() {
 
     // Set final summary
     const processingTime = Date.now() - checkStartTime;
-    const verifiedCount = allResults.filter((r) => r.status === "verified").length;
-    const goodCount = allResults.filter((r) => r.status === "good").length;
+    const liveCount = allResults.filter((r) => r.status === "live").length;
+    const notExistCount = allResults.filter((r) => r.status === "not_exist").length;
+    const unknownCount = allResults.filter((r) => r.status === "unknown").length;
     const invalidCount = allResults.filter((r) => r.status === "invalid").length;
     const avgScore =
       allResults.length > 0
@@ -213,8 +214,9 @@ export default function GmailChecker() {
 
     setSummary({
       total: allResults.length,
-      verified: verifiedCount,
-      good: goodCount,
+      live: liveCount,
+      notExist: notExistCount,
+      unknown: unknownCount,
       invalid: invalidCount,
       duplicatesRemoved,
       processingTime,

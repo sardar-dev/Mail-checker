@@ -1,4 +1,4 @@
-export type EmailStatus = "good" | "verified" | "invalid";
+export type EmailStatus = "live" | "not_exist" | "unknown" | "invalid";
 
 export interface ValidationResult {
   email: string;
@@ -19,8 +19,9 @@ export interface ValidationResult {
 
 export interface SummaryData {
   total: number;
-  verified: number;
-  good: number;
+  live: number;
+  notExist: number;
+  unknown: number;
   invalid: number;
   duplicatesRemoved: number;
   processingTime: number;

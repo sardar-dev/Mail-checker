@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant light (&:is(.light *));
-
 @layer base {
   * {
     box-sizing: border-box;

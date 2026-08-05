@@ -284,12 +284,12 @@ export default function GmailChecker() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="relative rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 light:border-black/10 p-6 sm:p-8 shadow-2xl"
+          className="relative rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-2xl"
         >
           {/* Glow effect */}
           <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-xl -z-10" />
 
-          <h2 className="text-2xl font-bold text-white light:text-slate-900 mb-6">
+          <h2 className="text-2xl font-bold text-white mb-6">
             Check Gmail Addresses
           </h2>
 
@@ -320,7 +320,7 @@ export default function GmailChecker() {
               value={inputText}
               onChange={handleTextChange}
               placeholder={`Paste one Gmail address...\n\nor\n\nPaste multiple Gmail addresses.\n\nExample:\njohn@gmail.com\nalex@gmail.com\nexample@gmail.com`}
-              className="w-full min-h-[180px] max-h-[320px] p-4 rounded-xl bg-black/40 light:bg-white border border-white/10 light:border-black/10 text-white light:text-slate-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent resize-none font-mono text-sm leading-relaxed transition-all duration-200"
+              className="w-full min-h-[180px] max-h-[320px] p-4 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent resize-none font-mono text-sm leading-relaxed transition-all duration-200"
               disabled={progress.isChecking}
               aria-label="Enter Gmail addresses to validate"
               aria-describedby="email-counters"
@@ -334,7 +334,7 @@ export default function GmailChecker() {
             {/* Counters */}
             <div
               id="email-counters"
-              className="flex items-center gap-4 mt-2 text-xs text-gray-500 light:text-slate-500"
+              className="flex items-center gap-4 mt-2 text-xs text-gray-500"
             >
               <span>
                 {emailCount} email{emailCount !== 1 ? "s" : ""}
@@ -371,7 +371,7 @@ export default function GmailChecker() {
             <button
               onClick={handlePaste}
               disabled={progress.isChecking}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-gray-300 light:text-slate-600 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
               aria-label="Paste from clipboard"
             >
               <svg
@@ -394,7 +394,7 @@ export default function GmailChecker() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={progress.isChecking}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-gray-300 light:text-slate-600 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
               aria-label="Upload TXT or CSV file"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -406,7 +406,7 @@ export default function GmailChecker() {
             <button
               onClick={handleClear}
               disabled={progress.isChecking}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-gray-300 light:text-slate-600 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
               aria-label="Clear all"
             >
               <svg

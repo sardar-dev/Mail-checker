@@ -12,13 +12,13 @@ export default function Hero() {
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 backdrop-blur-sm mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm mb-8"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-sm text-gray-300 light:text-slate-600 font-medium">
+            <span className="text-sm text-gray-300 font-medium">
               Free &bull; Instant &bull; Secure
             </span>
           </motion.div>
@@ -27,17 +27,17 @@ export default function Hero() {
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Gmail
             </span>{" "}
-            <span className="text-white light:text-slate-900">Checker</span>
+            <span className="text-white">Checker</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-gray-400 light:text-slate-500 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
             Instantly validate one or hundreds of Gmail addresses with advanced
             email validation including DNS lookup, MX record verification, and
             deliverability scoring.
           </p>
 
           <motion.div
-            className="mt-10 flex items-center justify-center gap-8 text-sm text-gray-500 light:text-slate-500"
+            className="mt-10 flex items-center justify-center gap-8 text-sm text-gray-500"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.6 }}

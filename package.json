@@ -11,7 +11,6 @@
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
     "clsx": "^2.1.1",
-    "dns": "^0.2.2",
     "dotenv": "17.3.1",
     "drizzle-orm": "0.45.2",
     "email-deep-validator": "^3.3.0",

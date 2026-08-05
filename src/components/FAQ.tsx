@@ -18,7 +18,7 @@ const faqItems: FAQItem[] = [
   {
     question: "What is the maximum limit?",
     answer:
-      "You can check up to 70 email addresses per validation run. This limit ensures optimal performance and prevents abuse. If you need to check more addresses, you can run multiple checks sequentially.",
+      "You can check up to 100 email addresses per validation run. This limit ensures optimal performance and prevents abuse. If you need to check more addresses, you can run multiple checks sequentially.",
   },
   {
     question: "Does this store my emails?",
@@ -49,13 +49,13 @@ export default function FAQ() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white light:text-slate-900 mb-4">
             Frequently Asked{" "}
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               Questions
             </span>
           </h2>
-          <p className="text-gray-400">
+          <p className="text-gray-400 light:text-slate-500">
             Everything you need to know about Gmail Checker.
           </p>
         </motion.div>
@@ -68,7 +68,7 @@ export default function FAQ() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
-              className="rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/10 overflow-hidden"
+              className="rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/10 light:border-black/10 overflow-hidden"
             >
               <button
                 onClick={() => toggle(index)}
@@ -76,11 +76,11 @@ export default function FAQ() {
                 aria-expanded={openIndex === index}
                 aria-controls={`faq-answer-${index}`}
               >
-                <span className="text-white font-medium pr-4">
+                <span className="text-white light:text-slate-900 font-medium pr-4">
                   {item.question}
                 </span>
                 <motion.svg
-                  className="w-5 h-5 text-gray-400 flex-shrink-0"
+                  className="w-5 h-5 text-gray-400 light:text-slate-500 flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -107,7 +107,7 @@ export default function FAQ() {
                     className="overflow-hidden"
                     role="region"
                   >
-                    <div className="px-5 pb-5 text-gray-400 text-sm leading-relaxed">
+                    <div className="px-5 pb-5 text-gray-400 light:text-slate-500 text-sm leading-relaxed">
                       {item.answer}
                     </div>
                   </motion.div>

@@ -14,6 +14,7 @@ export default function AnimatedBackground() {
 
     let animationId: number;
     let isVisible = true;
+    let isLight = document.documentElement.classList.contains("light");
     let particles: {
       x: number;
       y: number;
@@ -23,6 +24,16 @@ export default function AnimatedBackground() {
       opacity: number;
       hue: number;
     }[] = [];
+
+    // The theme toggle just adds/removes a class on <html> — watch for
+    // that so the canvas gradient switches palette without a page reload.
+    const themeObserver = new MutationObserver(() => {
+      isLight = document.documentElement.classList.contains("light");
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -54,11 +65,17 @@ export default function AnimatedBackground() {
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Static gradient background
+      // Static gradient background — different palette per theme
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, "#0a0a1a");
-      gradient.addColorStop(0.5, "#0d1117");
-      gradient.addColorStop(1, "#0a0a1a");
+      if (isLight) {
+        gradient.addColorStop(0, "#f8fafc");
+        gradient.addColorStop(0.5, "#f1f5f9");
+        gradient.addColorStop(1, "#f8fafc");
+      } else {
+        gradient.addColorStop(0, "#0a0a1a");
+        gradient.addColorStop(0.5, "#0d1117");
+        gradient.addColorStop(1, "#0a0a1a");
+      }
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -74,7 +91,10 @@ export default function AnimatedBackground() {
 
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${particle.hue}, 70%, 60%, ${particle.opacity})`;
+        // Light mode needs darker, more saturated particles/lines to
+        // stay visible against a near-white background.
+        const lightness = isLight ? 40 : 60;
+        ctx.fillStyle = `hsla(${particle.hue}, 70%, ${lightness}%, ${particle.opacity})`;
         ctx.fill();
       }
 
@@ -93,11 +113,12 @@ export default function AnimatedBackground() {
           const distSq = dx * dx + dy * dy;
           if (distSq < maxDistSq) {
             const distance = Math.sqrt(distSq);
-            const opacity = (1 - distance / maxDist) * 0.12;
+            const opacity = (1 - distance / maxDist) * (isLight ? 0.18 : 0.12);
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `hsla(220, 70%, 60%, ${opacity})`;
+            const lineLightness = isLight ? 40 : 60;
+            ctx.strokeStyle = `hsla(220, 70%, ${lineLightness}%, ${opacity})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -124,6 +145,7 @@ export default function AnimatedBackground() {
 
     return () => {
       cancelAnimationFrame(animationId);
+      themeObserver.disconnect();
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("resize", resize);
     };

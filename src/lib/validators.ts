@@ -123,6 +123,68 @@ export function isRoleAccount(email: string): boolean {
   return ROLE_ACCOUNTS.has(localPart);
 }
 
+const COMMON_DOMAINS = [
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "hotmail.com",
+  "outlook.com",
+  "icloud.com",
+  "aol.com",
+  "live.com",
+  "msn.com",
+  "protonmail.com",
+];
+
+function levenshteinDistance(a: string, b: string): number {
+  const matrix: number[][] = Array.from({ length: a.length + 1 }, () =>
+    new Array<number>(b.length + 1).fill(0)
+  );
+
+  for (let i = 0; i <= a.length; i++) matrix[i]![0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0]![j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i]![j] = Math.min(
+        matrix[i - 1]![j]! + 1,
+        matrix[i]![j - 1]! + 1,
+        matrix[i - 1]![j - 1]! + cost
+      );
+    }
+  }
+
+  return matrix[a.length]![b.length]!;
+}
+
+/**
+ * Suggests a likely-intended domain when the given one looks like a typo
+ * of a well-known provider (e.g. "gmial.com" -> "gmail.com"). Returns null
+ * when the domain is already a known provider or too different to guess.
+ */
+export function suggestDomainTypo(domain: string): string | null {
+  const lower = domain.toLowerCase();
+  if (COMMON_DOMAINS.includes(lower)) return null;
+
+  let best: string | null = null;
+  let bestDistance = Infinity;
+
+  for (const candidate of COMMON_DOMAINS) {
+    const distance = levenshteinDistance(lower, candidate);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = candidate;
+    }
+  }
+
+  // Only suggest for close-but-not-exact matches — a distance of 1-2
+  // catches typos (dropped/swapped/wrong letter) without false-flagging
+  // legitimately different domains.
+  if (best && bestDistance > 0 && bestDistance <= 2) return best;
+  return null;
+}
+
 /**
  * A mailbox is only labelled live or not-exist when SMTP returned a
  * definitive recipient result. Timeouts, blocked SMTP, catch-all domains,
@@ -144,10 +206,11 @@ export function calculateScore(data: {
   gmail: boolean;
   disposable: boolean;
   roleAccount: boolean;
+  catchAll: boolean;
 }): number {
   let score = 0;
 
-  if (data.status === "live") score += 60;
+  if (data.status === "live") score += data.catchAll ? 35 : 60;
   else if (data.status === "unknown") score += 30;
   else return 0;
 
@@ -161,10 +224,11 @@ export function calculateScore(data: {
 export function calculateConfidence(data: {
   status: EmailStatus;
   gmail: boolean;
+  catchAll: boolean;
 }): number {
   let confidence = 0;
 
-  if (data.status === "live") confidence += 60;
+  if (data.status === "live") confidence += data.catchAll ? 25 : 60;
   else if (data.status === "unknown") confidence += 30;
   else return 0;
 
@@ -181,6 +245,7 @@ export function generateReason(data: {
   validMailbox: boolean | null;
   disposable: boolean;
   roleAccount: boolean;
+  catchAll: boolean;
 }): string {
   if (!data.wellFormed) return "Invalid email syntax";
   if (!data.validDomain) return "Domain does not exist or has no MX records";
@@ -189,6 +254,10 @@ export function generateReason(data: {
 
   if (data.status === "not_exist") {
     return "Mail server rejected this mailbox";
+  }
+
+  if (data.status === "live" && data.catchAll) {
+    return "Domain accepts all addresses (catch-all) — this specific mailbox could not be individually confirmed";
   }
 
   if (data.status === "live") {
@@ -211,23 +280,27 @@ export function buildResult(
     wellFormed: boolean;
     validDomain: boolean;
     validMailbox: boolean | null;
-  }
+  },
+  catchAll = false
 ): ValidationResult {
   const domain = email.includes("@") ? email.split("@")[1] ?? "" : "";
   const gmail = isGmailDomain(domain);
   const provider = detectProvider(domain);
   const disposable = isDisposable(domain);
   const roleAccount = isRoleAccount(email);
+  const typoSuggestion = smtpResult.wellFormed
+    ? suggestDomainTypo(domain)
+    : null;
 
   const status = determineStatus(smtpResult);
-  const valid = status === "live";
+  const valid = status === "live" && !catchAll;
   const syntax = smtpResult.wellFormed;
   const domainValid = smtpResult.validDomain;
   const mx = smtpResult.validDomain;
   const mailbox = smtpResult.validMailbox;
 
-  const score = calculateScore({ status, gmail, disposable, roleAccount });
-  const confidence = calculateConfidence({ status, gmail });
+  const score = calculateScore({ status, gmail, disposable, roleAccount, catchAll });
+  const confidence = calculateConfidence({ status, gmail, catchAll });
   const reason = generateReason({
     status,
     gmail,
@@ -236,6 +309,7 @@ export function buildResult(
     validMailbox: smtpResult.validMailbox,
     disposable,
     roleAccount,
+    catchAll,
   });
 
   return {
@@ -250,6 +324,8 @@ export function buildResult(
     provider,
     disposable,
     roleAccount,
+    catchAll,
+    typoSuggestion,
     score,
     confidence,
     reason,

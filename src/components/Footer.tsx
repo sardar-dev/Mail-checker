@@ -4,7 +4,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-white/5">
+    <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-white/5 light:border-black/5">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -13,17 +13,17 @@ export default function Footer() {
             </span>
           </div>
 
-          <nav className="flex items-center gap-6 text-sm text-gray-500" aria-label="Footer navigation">
+          <nav className="flex items-center gap-6 text-sm text-gray-500 light:text-slate-500" aria-label="Footer navigation">
             <a
               href="#"
-              className="hover:text-gray-300 transition-colors"
+              className="hover:text-gray-300 light:text-slate-600 transition-colors"
               onClick={(e) => e.preventDefault()}
             >
               Privacy Policy
             </a>
             <a
               href="#"
-              className="hover:text-gray-300 transition-colors"
+              className="hover:text-gray-300 light:text-slate-600 transition-colors"
               onClick={(e) => e.preventDefault()}
             >
               Terms of Service

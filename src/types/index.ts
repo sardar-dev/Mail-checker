@@ -12,6 +12,8 @@ export interface ValidationResult {
   provider: string;
   disposable: boolean;
   roleAccount: boolean;
+  catchAll: boolean;
+  typoSuggestion: string | null;
   score: number;
   confidence: number;
   reason: string;

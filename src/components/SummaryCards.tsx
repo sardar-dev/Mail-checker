@@ -29,7 +29,7 @@ function CopyButton({ emails, label }: { emails: string[]; label: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 group"
+      className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 hover:bg-white/10 light:bg-black/10 hover:border-white/20 light:border-black/20 transition-all duration-200 group"
       aria-label={`Copy ${label} emails`}
       title={`Copy ${label} emails`}
     >
@@ -48,7 +48,7 @@ function CopyButton({ emails, label }: { emails: string[]; label: string }) {
         </svg>
       ) : (
         <svg
-          className="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-colors"
+          className="w-3.5 h-3.5 text-gray-400 light:text-slate-500 group-hover:text-white light:text-slate-900 transition-colors"
           viewBox="0 0 24 24"
           fill="none"
           aria-hidden="true"
@@ -160,7 +160,7 @@ export default function SummaryCards({ summary, results }: SummaryCardsProps) {
 
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-bold text-white mb-6">Summary</h3>
+      <h3 className="text-xl font-bold text-white light:text-slate-900 mb-6">Summary</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {cards.map((card, index) => (
           <motion.div
@@ -168,7 +168,7 @@ export default function SummaryCards({ summary, results }: SummaryCardsProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
-            className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-4 text-center"
+            className="relative rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/10 light:border-black/10 p-4 text-center"
           >
             {card.copyEmails !== null && (
               <CopyButton emails={card.copyEmails} label={card.label} />
@@ -178,8 +178,8 @@ export default function SummaryCards({ summary, results }: SummaryCardsProps) {
             >
               {card.icon}
             </div>
-            <p className="text-2xl font-bold text-white mb-1">{card.value}</p>
-            <p className="text-xs text-gray-500">{card.label}</p>
+            <p className="text-2xl font-bold text-white light:text-slate-900 mb-1">{card.value}</p>
+            <p className="text-xs text-gray-500 light:text-slate-500">{card.label}</p>
           </motion.div>
         ))}
       </div>

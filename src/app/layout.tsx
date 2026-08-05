@@ -52,6 +52,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className="dark">
       <head>
         <script
+          // Runs before paint to apply the saved theme immediately —
+          // without this, the page would flash dark before switching
+          // to a saved light preference (or vice versa).
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="light"){document.documentElement.classList.add("light");document.documentElement.classList.remove("dark");}}catch(e){}})();`,
+          }}
+        />
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
@@ -82,7 +90,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
       </head>
-      <body className="bg-[#0a0a1a] text-white antialiased min-h-screen">
+      <body className="bg-[#0a0a1a] light:bg-slate-50 text-white light:text-slate-900 antialiased min-h-screen transition-colors duration-300">
         {children}
       </body>
     </html>

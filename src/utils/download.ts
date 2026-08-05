@@ -14,10 +14,10 @@ export function resultsToText(results: ValidationResult[]): string {
 }
 
 export function resultsToCSV(results: ValidationResult[]): string {
-  const header = "#,Email,Status,Reason";
+  const header = "#,Email,Status,Catch-All,Reason";
   const rows = results.map(
     (r, i) =>
-      `${i + 1},"${r.email}",${r.status.toUpperCase()},"${r.reason}"`
+      `${i + 1},"${r.email}",${r.status.toUpperCase()},${r.catchAll ? "Yes" : "No"},"${r.reason}"`
   );
   return [header, ...rows].join("\n");
 }

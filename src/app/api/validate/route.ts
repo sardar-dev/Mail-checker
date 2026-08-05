@@ -3,7 +3,7 @@ import EmailValidator from "email-deep-validator";
 import { buildResult } from "@/lib/validators";
 import { rateLimit } from "@/utils/rate-limit";
 import { sanitizeInput } from "@/utils/helpers";
-import { dnsCache, emailCache } from "@/lib/cache";
+import { dnsCache, emailCache, catchAllCache } from "@/lib/cache";
 import type { ValidationResult } from "@/types";
 
 export const runtime = "nodejs";
@@ -23,10 +23,35 @@ let activeRequests = 0;
 const MAX_BODY_SIZE = 10 * 1024;
 
 // Maximum emails per request
-const MAX_EMAILS = 70;
+const MAX_EMAILS = 100;
 
 // Request timeout (55 seconds — stays under the 60s function limit above)
 const REQUEST_TIMEOUT_MS = 55_000;
+
+// Checks whether a domain accepts mail for ANY address (catch-all) by
+// probing a clearly-fake, randomized mailbox. If the mail server accepts
+// that too, a "live" result for a real address on this domain doesn't
+// actually confirm the specific mailbox exists — cached per domain since
+// it's a domain-level property, not per-email.
+async function checkCatchAll(domain: string): Promise<boolean> {
+  const cached = catchAllCache.get(domain);
+  if (cached !== undefined) return cached;
+
+  const probeLocalPart = `not-a-real-mailbox-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+
+  try {
+    const raw = await emailValidator.verify(`${probeLocalPart}@${domain}`);
+    const isCatchAll = raw?.validMailbox === true;
+    catchAllCache.set(domain, isCatchAll);
+    return isCatchAll;
+  } catch {
+    // Couldn't determine — don't assume catch-all, just don't cache it
+    // either so a future check can try again.
+    return false;
+  }
+}
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";
@@ -80,7 +105,7 @@ export async function POST(request: NextRequest) {
 
       if (emails.length > MAX_EMAILS) {
         return NextResponse.json(
-          { error: "Maximum 70 email addresses allowed." },
+          { error: "Maximum 100 email addresses allowed." },
           { status: 400 }
         );
       }
@@ -93,7 +118,7 @@ export async function POST(request: NextRequest) {
         // Check email cache first
         const cached = emailCache.get(email);
         if (cached) {
-          return buildResult(email, cached);
+          return buildResult(email, cached, cached.catchAll);
         }
 
         // Check DNS cache for the domain
@@ -114,33 +139,56 @@ export async function POST(request: NextRequest) {
             validMailbox: null,
           };
         } else {
-          try {
-            const raw = await emailValidator.verify(email);
-            verification = {
-              wellFormed: raw.wellFormed ?? false,
-              validDomain: raw.validDomain ?? false,
-              validMailbox: raw.validMailbox ?? null,
-            };
+          // Retry once: a single failed/timed-out attempt (transient
+          // network hiccup, greylisting, etc.) shouldn't be treated as
+          // final — one retry meaningfully improves accuracy for cheap.
+          let raw: {
+            wellFormed?: boolean;
+            validDomain?: boolean;
+            validMailbox?: boolean | null;
+          } | null = null;
 
-            // Cache the DNS result for this domain
-            if (domain && verification.validDomain !== undefined) {
-              dnsCache.set(domain, {
-                mxFound: verification.validDomain,
-                domainValid: verification.validDomain,
-              });
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              raw = await emailValidator.verify(email);
+            } catch {
+              raw = null;
             }
-          } catch {
-            verification = {
-              wellFormed: false,
-              validDomain: false,
-              validMailbox: null,
-            };
+
+            // A definitive answer (mailbox confirmed live/dead, or the
+            // domain itself is invalid) doesn't need a second attempt.
+            // Only retry when the result was inconclusive (null mailbox
+            // status on an otherwise-valid domain) or the call failed.
+            const inconclusive =
+              !raw || (raw.validDomain && raw.validMailbox === null);
+            if (!inconclusive) break;
+          }
+
+          verification = {
+            wellFormed: raw?.wellFormed ?? false,
+            validDomain: raw?.validDomain ?? false,
+            validMailbox: raw?.validMailbox ?? null,
+          };
+
+          // Cache the DNS result for this domain
+          if (domain && verification.validDomain !== undefined) {
+            dnsCache.set(domain, {
+              mxFound: verification.validDomain,
+              domainValid: verification.validDomain,
+            });
           }
         }
 
+        // Only worth checking catch-all when the mailbox looked live —
+        // it's the case where the distinction actually matters.
+        const catchAll =
+          verification.validMailbox === true && domain
+            ? await checkCatchAll(domain)
+            : false;
+
         // Cache the full email result
-        emailCache.set(email, verification);
-        return buildResult(email, verification);
+        emailCache.set(email, { ...verification, catchAll });
+        return buildResult(email, verification, catchAll);
       };
 
       // Validate each email in order so SMTP checks run one at a time.

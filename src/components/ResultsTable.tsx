@@ -109,13 +109,13 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
 
   return (
     <div className="mt-8">
-      <div className="rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden">
+      <div className="rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 light:border-black/10 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="p-6 sm:p-8 border-b border-white/5">
+        <div className="p-6 sm:p-8 border-b border-white/5 light:border-black/5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h3 className="text-xl font-bold text-white">
+            <h3 className="text-xl font-bold text-white light:text-slate-900">
               Results
-              <span className="ml-2 text-sm font-normal text-gray-400">
+              <span className="ml-2 text-sm font-normal text-gray-400 light:text-slate-500">
                 ({filteredResults.length} of {results.length} email{results.length !== 1 ? "s" : ""})
               </span>
             </h3>
@@ -124,7 +124,7 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-gray-300 light:text-slate-600 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900 transition-all text-xs font-medium"
                 aria-label="Copy results"
               >
                 {copied ? (
@@ -146,7 +146,7 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
 
               <button
                 onClick={handleDownloadTxt}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-gray-300 light:text-slate-600 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900 transition-all text-xs font-medium"
                 aria-label="Download as TXT"
               >
                 TXT
@@ -154,7 +154,7 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
 
               <button
                 onClick={handleDownloadCSV}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-gray-300 light:text-slate-600 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900 transition-all text-xs font-medium"
                 aria-label="Download as CSV"
               >
                 CSV
@@ -162,7 +162,7 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
 
               <button
                 onClick={handleDownloadJSON}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-gray-300 light:text-slate-600 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900 transition-all text-xs font-medium"
                 aria-label="Download as JSON"
               >
                 JSON
@@ -170,7 +170,7 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
 
               <button
                 onClick={handlePrint}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-gray-300 light:text-slate-600 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900 transition-all text-xs font-medium"
                 aria-label="Print results"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -193,13 +193,13 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-b border-white/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="px-6 py-4 border-b border-white/5 light:border-black/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Filter results by status">
             {(["all", "live", "not_exist", "unknown", "invalid"] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setFilter(status)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${filter === status ? "border-blue-400/50 bg-blue-400/15 text-blue-200" : "border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/10 hover:text-white"}`}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${filter === status ? "border-blue-400/50 bg-blue-400/15 text-blue-200" : "border-white/10 light:border-black/10 bg-white/[0.03] text-gray-400 light:text-slate-500 hover:bg-white/10 light:bg-black/10 hover:text-white light:text-slate-900"}`}
               >
                 {status === "all" ? `All (${results.length})` : `${status === "not_exist" ? "Not Exist" : status[0].toUpperCase() + status.slice(1)} (${results.filter((result) => result.status === status).length})`}
               </button>
@@ -211,7 +211,7 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search email..."
-              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder-gray-500 outline-none transition focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/50"
+              className="w-full rounded-lg border border-white/10 light:border-black/10 bg-black/30 light:bg-white px-3 py-2 text-xs text-white light:text-slate-900 placeholder-gray-500 outline-none transition focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/50"
             />
           </label>
         </div>
@@ -220,17 +220,17 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
         <div className="overflow-x-auto">
           <table className="w-full" role="table" aria-label="Email validation results">
             <thead>
-              <tr className="border-b border-white/5">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+              <tr className="border-b border-white/5 light:border-black/5">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 light:text-slate-500 uppercase tracking-wider">#</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 light:text-slate-500 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 light:text-slate-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 light:text-slate-500 uppercase tracking-wider">Reason</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredResults.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500 light:text-slate-500">
                     No results match this filter.
                   </td>
                 </tr>
@@ -243,12 +243,33 @@ export default function ResultsTable({ results, onClear }: ResultsTableProps) {
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                   className={`${getRowBg(result.status)} transition-colors`}
                 >
-                  <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
-                  <td className="px-6 py-4 text-sm text-white font-mono">{result.email}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <StatusBadge status={result.status} />
+                  <td className="px-6 py-4 text-sm text-gray-500 light:text-slate-500">{index + 1}</td>
+                  <td className="px-6 py-4 text-sm text-white light:text-slate-900 font-mono">
+                    {result.email}
+                    {result.typoSuggestion && (
+                      <div className="mt-1 text-xs font-sans text-amber-400/90">
+                        Did you mean{" "}
+                        <span className="font-mono">
+                          {result.email.split("@")[0]}@{result.typoSuggestion}
+                        </span>
+                        ?
+                      </div>
+                    )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-400">{result.reason}</td>
+                  <td className="px-6 py-4 text-sm">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <StatusBadge status={result.status} />
+                      {result.catchAll && (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-400/10 border border-purple-400/20 text-purple-300"
+                          title="This domain accepts mail for any address, so this specific mailbox couldn't be individually confirmed"
+                        >
+                          Catch-all
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-400 light:text-slate-500">{result.reason}</td>
                 </motion.tr>
               ))}
             </tbody>

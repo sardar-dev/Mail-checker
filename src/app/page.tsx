@@ -1,4 +1,5 @@
 import AnimatedBackground from "@/components/AnimatedBackground";
+import ThemeToggle from "@/components/ThemeToggle";
 import Hero from "@/components/Hero";
 import GmailChecker from "@/components/GmailChecker";
 import Features from "@/components/Features";
@@ -9,6 +10,7 @@ export default function Home() {
   return (
     <>
       <AnimatedBackground />
+      <ThemeToggle />
       <main className="relative z-10">
         <Hero />
         <GmailChecker />

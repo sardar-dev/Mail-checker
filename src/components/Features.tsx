@@ -32,7 +32,7 @@ const features: FeatureItem[] = [
   {
     icon: "✓",
     title: "Bulk Checking",
-    description: "Validate up to 70 email addresses simultaneously in a single check.",
+    description: "Validate up to 100 email addresses simultaneously in a single check.",
   },
   {
     icon: "✓",
@@ -67,13 +67,13 @@ export default function Features() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white light:text-slate-900 mb-4">
             Powerful{" "}
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               Features
             </span>
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
+          <p className="text-gray-400 light:text-slate-500 max-w-2xl mx-auto">
             Everything you need to validate Gmail addresses with confidence and precision.
           </p>
         </motion.div>
@@ -86,15 +86,15 @@ export default function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="group rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300"
+              className="group rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 light:border-black/10 p-6 hover:bg-white/[0.06] hover:border-white/20 light:border-black/20 transition-all duration-300"
             >
               <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-emerald-400 font-bold mb-4 group-hover:scale-110 transition-transform duration-300">
                 {feature.icon}
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
+              <h3 className="text-lg font-semibold text-white light:text-slate-900 mb-2">
                 {feature.title}
               </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
+              <p className="text-sm text-gray-400 light:text-slate-500 leading-relaxed">
                 {feature.description}
               </p>
             </motion.div>

@@ -75,4 +75,10 @@ export const emailCache = new LRUCache<{
   wellFormed: boolean;
   validDomain: boolean;
   validMailbox: boolean | null;
+  catchAll: boolean;
 }>(2000, 10 * 60 * 1000);
+
+// Catch-all domain cache — 30 minute TTL, max 500 domains. A catch-all
+// domain accepts mail for ANY address, so a "live" SMTP result there
+// doesn't actually confirm the specific mailbox exists.
+export const catchAllCache = new LRUCache<boolean>(500, 30 * 60 * 1000);

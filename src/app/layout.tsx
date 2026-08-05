@@ -3,88 +3,61 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Gmail Checker - Instantly Validate Gmail Addresses",
+  metadataBase: new URL("https://gmailchecker.vip"),
+  title: {
+    default: "GmailChecker.VIP | Gmail & Bulk Email Checker",
+    template: "%s | GmailChecker.VIP",
+  },
   description:
-    "Free online Gmail checker tool. Instantly validate one or hundreds of Gmail addresses with advanced email validation including DNS lookup, MX record verification, and deliverability scoring.",
+    "Check Gmail and email addresses in bulk with format validation, MX lookup, and SMTP verification. Clean email lists and verify deliverability with GmailChecker.VIP.",
+  applicationName: "GmailChecker.VIP",
   keywords: [
+    "gmailchecker",
     "gmail checker",
-    "email validator",
-    "gmail validator",
-    "email verification",
-    "mx record check",
-    "dns lookup",
+    "gmail email checker",
+    "email checker",
+    "email verifier",
+    "email validation",
     "bulk email checker",
+    "bulk email verification",
+    "verify email",
+    "verify gmail",
+    "smtp verification",
+    "mx lookup",
     "email validation tool",
+    "email list cleaner",
   ],
-  authors: [{ name: "Gmail Checker" }],
-  creator: "Gmail Checker",
-  metadataBase: new URL("https://gmailchecker.app"),
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
   openGraph: {
-    title: "Gmail Checker - Instantly Validate Gmail Addresses",
-    description:
-      "Free online Gmail checker tool. Instantly validate one or hundreds of Gmail addresses with advanced email validation including DNS lookup, MX record verification, and deliverability scoring.",
-    url: "https://gmailchecker.app",
-    siteName: "Gmail Checker",
-    locale: "en_US",
     type: "website",
+    url: "/",
+    siteName: "GmailChecker.VIP",
+    title: "GmailChecker.VIP | Gmail & Bulk Email Checker",
+    description:
+      "Verify email lists with format checks, MX lookup, and SMTP verification.",
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Gmail Checker - Instantly Validate Gmail Addresses",
+    card: "summary",
+    title: "GmailChecker.VIP | Gmail & Bulk Email Checker",
     description:
-      "Free online Gmail checker tool. Instantly validate one or hundreds of Gmail addresses with advanced email validation including DNS lookup, MX record verification, and deliverability scoring.",
+      "Verify email lists with format checks, MX lookup, and SMTP verification.",
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
+  icons: { icon: "/icon.svg", shortcut: "/icon.svg", apple: "/icon.svg" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebApplication",
-              name: "Gmail Checker",
-              description:
-                "Free online Gmail checker tool. Instantly validate Gmail addresses with advanced email validation including DNS lookup, MX record verification, and deliverability scoring.",
-              url: "https://gmailchecker.app",
-              applicationCategory: "UtilityApplication",
-              operatingSystem: "Web",
-              offers: {
-                "@type": "Offer",
-                price: "0",
-                priceCurrency: "USD",
-              },
-              featureList: [
-                "Gmail Detection",
-                "Email Syntax Validation",
-                "MX Record Check",
-                "DNS Lookup",
-                "Duplicate Removal",
-                "Bulk Checking",
-                "Instant Results",
-                "Deliverability Score",
-              ],
-            }),
-          }}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+          rel="stylesheet"
         />
       </head>
-      <body className="bg-[#0a0a1a] text-white antialiased min-h-screen">
-        {children}
-      </body>
+      <body style={{ fontFamily: "'Inter', sans-serif" }}>{children}</body>
     </html>
   );
 }

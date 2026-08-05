@@ -1,22 +1,6 @@
-# dependencies
 node_modules/
-
-# next.js build output
 .next/
 out/
-
-# environment variables
-.env
-.env.local
-.env.*.local
-
-# logs
-*.log
-npm-debug.log*
-
-# OS
-.DS_Store
-
-# typescript
 *.tsbuildinfo
-next-env.d.ts
+.env*
+!.env.example
